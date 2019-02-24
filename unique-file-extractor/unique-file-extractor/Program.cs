@@ -56,13 +56,11 @@ namespace UniqueFilesExtractor
                     {
                         if (identicalFound == false)
                         {
-                            //Console.ForegroundColor = ConsoleColor.DarkGreen;
                             Console.WriteLine("[original]");
                             Console.WriteLine("Name: " + file.Name);
                             Console.WriteLine("Path: " + file.FullName);
                             Console.WriteLine("Size: " + file.Length);
                             Console.WriteLine();
-                            //Console.ResetColor();
                             identicalFound = true;
                         }
                         else
@@ -78,7 +76,23 @@ namespace UniqueFilesExtractor
                     }
                 }
 
-                File.Copy(file.FullName, outputFolder + @"\" + file.Name, overwrite: true);
+                if (File.Exists(outputFolder + @"\" + file.Name))
+                {
+                    int copyIndex = 1;
+                    string newPathWithCopyIndex = 
+                        String.Format(@"{0}\{1}({2}){3}", outputFolder, Path.GetFileNameWithoutExtension(file.FullName), copyIndex, file.Extension);
+                    while (File.Exists(newPathWithCopyIndex) == true)
+                    {
+                        copyIndex++;
+                        newPathWithCopyIndex = 
+                            String.Format(@"{0}\{1}({2}){3}", outputFolder, Path.GetFileNameWithoutExtension(file.FullName), copyIndex, file.Extension);
+                    }
+                    File.Copy(file.FullName, newPathWithCopyIndex);
+                }
+                else
+                {
+                    File.Copy(file.FullName, outputFolder + @"\" + file.Name);
+                }            
                 filesChecked.Add(file);
             }
         }
