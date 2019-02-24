@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace UniqueFilesExtractor
 {
@@ -40,40 +41,44 @@ namespace UniqueFilesExtractor
 
             List<FileInfo> filesChecked = new List<FileInfo>();
 
-            int i = 1;
             foreach (FileInfo file in files)
             {
+                if (filesChecked.Contains(file)) continue;
+
                 bool identicalFound = false;
+                byte[] fileBytes = File.ReadAllBytes(file.FullName);
 
                 foreach (FileInfo fileToCompare in files)
                 {
-                    if (file.Length == fileToCompare.Length &&
-                        file.Name == fileToCompare.Name &&
-                        file.FullName != fileToCompare.FullName &&
-                        !filesChecked.Contains(fileToCompare))
+                    byte[] fileToCompareBytes = File.ReadAllBytes(fileToCompare.FullName);
+
+                    if (fileBytes.SequenceEqual(fileToCompareBytes) && !filesChecked.Contains(fileToCompare))
                     {
                         if (identicalFound == false)
                         {
-                            Console.ForegroundColor = ConsoleColor.DarkGreen;
-                            Console.WriteLine("IDENTICAL #" + i + ":");
-                            Console.WriteLine(file.FullName);
-                            Console.WriteLine(file.Length);
+                            //Console.ForegroundColor = ConsoleColor.DarkGreen;
+                            Console.WriteLine("[original]");
+                            Console.WriteLine("Name: " + file.Name);
+                            Console.WriteLine("Path: " + file.FullName);
+                            Console.WriteLine("Size: " + file.Length);
                             Console.WriteLine();
-                            Console.ResetColor();
-                            i++;
+                            //Console.ResetColor();
                             identicalFound = true;
                         }
-
-                        Console.WriteLine("\t" + fileToCompare.FullName);
-                        Console.WriteLine("\t" + fileToCompare.Length);
-                        Console.WriteLine();
+                        else
+                        {
+                            Console.WriteLine("\t" + "[duplicate]");
+                            Console.WriteLine("\t" + "Name: " + fileToCompare.Name);
+                            Console.WriteLine("\t" + "Path: " + fileToCompare.FullName);
+                            Console.WriteLine("\t" + "Size: " + fileToCompare.Length);
+                            Console.WriteLine();
+                        }
 
                         filesChecked.Add(fileToCompare);
                     }
                 }
 
                 File.Copy(file.FullName, outputFolder + @"\" + file.Name, overwrite: true);
-
                 filesChecked.Add(file);
             }
         }
