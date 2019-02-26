@@ -30,20 +30,30 @@ namespace UniqueFilesExtractor
 
         static List<FileInfo> GetFiles(string fromFolder, string fileFormat)
         {
+            if(!Directory.Exists(fromFolder))
+            {
+                Console.WriteLine("Input folder doesn't exist.");
+                return new List<FileInfo>();
+            }
+
             string[] fileNames = Directory.GetFiles(fromFolder, "*." + fileFormat + "*", SearchOption.AllDirectories);
-
             List<FileInfo> files = new List<FileInfo>(fileNames.Length);
-
             foreach (string fileName in fileNames)
             {
                 files.Add(new FileInfo(fileName));
             }
-
             return files;
+
         }
 
         static void ExtractUniqueFiles(List<FileInfo> files, string outputFolder)
         {
+            if (files.Capacity == 0)
+            {
+                Console.WriteLine("There are no files.");
+                return;
+            }
+
             Directory.CreateDirectory(outputFolder);
 
             List<FileInfo> filesChecked = new List<FileInfo>();
