@@ -7,11 +7,18 @@ namespace UniqueFilesExtractor
 {
     class Program
     {
+        const string INPUT_FOLDER = "input_folder";
+        const string OUTPUT_FOLDER = "output_folder";
+        const string FILE_FORMAT = "file_format";
+
         static void Main(string[] args)
         {
             ConsoleSetUTF8();
-            List<FileInfo> files = GetFiles(fromFolder: @"C:\From Folder", fileFormat: "mp3");
-            ExtractUniqueFiles(files, outputFolder: @"C:\Unique Files");
+
+            Config config = new Config();
+            List<FileInfo> files = GetFiles(fromFolder: config.FindConfigValue(INPUT_FOLDER), 
+                                            fileFormat: config.FindConfigValue(FILE_FORMAT));
+            ExtractUniqueFiles(files, outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
 
             Console.ReadKey();
         }
