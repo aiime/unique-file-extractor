@@ -33,7 +33,6 @@ namespace UniqueFilesExtractor
 
         Dictionary<string, string> RawConfigToDictionary(string rawConfig)
         {
-            rawConfig = rawConfig.Replace(" ", string.Empty);
             string[] configEntries = rawConfig.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
             Dictionary<string, string> configDictionary = new Dictionary<string, string>(configEntries.Length);
@@ -41,7 +40,17 @@ namespace UniqueFilesExtractor
             foreach(string configEntry in configEntries)
             {
                 string key = configEntry.Substring(0, configEntry.IndexOf('='));
+                key = key.Replace(" ", "");
+
                 string value = configEntry.Substring(configEntry.IndexOf('=') + EQUAL_SIGN_LENGTH);
+                if (value.Contains("\""))
+                {
+                    value = value.Replace("\"", "");
+                }
+                else
+                {
+                    value = value.Replace(" ", "");
+                }
 
                 configDictionary.Add(key, value);
             }
