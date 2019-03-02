@@ -40,7 +40,7 @@ namespace UniqueFilesExtractor
                 ExtractUniqueFiles(CalculateHashCodes(files), outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
             }
 
-            Console.WriteLine("End");
+            Console.WriteLine("Completed");
             Console.ReadKey();
         }
 
@@ -106,42 +106,53 @@ namespace UniqueFilesExtractor
             List<FileInfo> filesChecked = new List<FileInfo>();
 
             foreach (FileInfo file in files)
-            {
+            { 
                 if (filesChecked.Contains(file)) continue;
 
                 bool identicalFound = false;
-                byte[] fileBytes = File.ReadAllBytes(file.FullName);
 
                 foreach (FileInfo fileToCompare in files)
                 {
-                    byte[] fileToCompareBytes = File.ReadAllBytes(fileToCompare.FullName);
+                    if (file.Length != fileToCompare.Length || filesChecked.Contains(fileToCompare)) continue;
 
-                    if (fileBytes.Length != fileToCompareBytes.Length)
+                    byte[] bufferFs1 = new byte[4096];
+                    byte[] bufferFs2 = new byte[4096];
+                    using (FileStream fs1 = file.OpenRead())
+                    using (FileStream fs2 = fileToCompare.OpenRead())
                     {
-                        continue;
+                        int bytesReadFs1;
+                        int bytesReadFs2;
+                        while ((bytesReadFs1 = fs1.Read(bufferFs1, 0, bufferFs1.Length)) > 0 &&
+                               (bytesReadFs2 = fs2.Read(bufferFs2, 0, bufferFs2.Length)) > 0)
+                        {
+                            for (int i = 0; i < bytesReadFs1; i++)
+                            {
+                                if (bufferFs1[i] != bufferFs2[i]) goto NEXT_FILE_TO_COMPARE;
+                            }
+                        }
                     }
 
-                    if (!filesChecked.Contains(fileToCompare) && fileBytes.SequenceEqual(fileToCompareBytes))
+                    if (identicalFound == false)
                     {
-                        if (identicalFound == false)
-                        {
-                            Console.WriteLine("[original]");
-                            Console.WriteLine("Name: " + file.Name);
-                            Console.WriteLine("Path: " + file.FullName);
-                            Console.WriteLine("Size: " + file.Length);
-                            Console.WriteLine();
-                            identicalFound = true;
-                        }
-                        else
-                        {
-                            Console.WriteLine("\t" + "[duplicate]");
-                            Console.WriteLine("\t" + "Name: " + fileToCompare.Name);
-                            Console.WriteLine("\t" + "Path: " + fileToCompare.FullName);
-                            Console.WriteLine("\t" + "Size: " + fileToCompare.Length);
-                            Console.WriteLine();
-                        }
-                        filesChecked.Add(fileToCompare);
+                        Console.WriteLine("[original]");
+                        Console.WriteLine("Name: " + file.Name);
+                        Console.WriteLine("Path: " + file.FullName);
+                        Console.WriteLine("Size: " + file.Length);
+                        Console.WriteLine();
+                        identicalFound = true;
                     }
+                    else
+                    {
+                        Console.WriteLine("\t" + "[duplicate]");
+                        Console.WriteLine("\t" + "Name: " + fileToCompare.Name);
+                        Console.WriteLine("\t" + "Path: " + fileToCompare.FullName);
+                        Console.WriteLine("\t" + "Size: " + fileToCompare.Length);
+                        Console.WriteLine();
+                    }
+
+                    filesChecked.Add(fileToCompare);
+
+                    NEXT_FILE_TO_COMPARE:;
                 }
 
                 if (File.Exists(outputFolder + @"\" + file.Name))
@@ -180,7 +191,7 @@ namespace UniqueFilesExtractor
             foreach (KeyValuePair<byte[], FileInfo> fileByHashEntry in fileByHash)
             {
                 if (checkedHashes.Contains(fileByHashEntry.Key)) continue;
-                
+
                 bool identicalFound = false;
 
                 foreach (KeyValuePair<byte[], FileInfo> fileByHashEntryToCompare in fileByHash)
@@ -207,7 +218,7 @@ namespace UniqueFilesExtractor
                             Console.WriteLine("\t" + "[duplicate]");
                             Console.WriteLine("\t" + "Name: " + fileByHashEntryToCompare.Value.Name);
                             Console.WriteLine("\t" + "Path: " + fileByHashEntryToCompare.Value.FullName);
-                            foreach (byte hashByte in fileByHashEntryToCompare.Key) Console.Write(hashByte); Console.WriteLine();
+                            Console.Write("\t" + "Hash: "); foreach (byte hashByte in fileByHashEntryToCompare.Key) Console.Write(hashByte); Console.WriteLine();
                             Console.WriteLine("\t" + "Size: " + fileByHashEntryToCompare.Value.Length);
                             Console.WriteLine();
                         }
