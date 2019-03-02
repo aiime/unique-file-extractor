@@ -9,6 +9,7 @@ namespace UniqueFilesExtractor
     {
         const string INPUT_FOLDER = "input_folder";
         const string OUTPUT_FOLDER = "output_folder";
+        const string FILE_FORMAT_SPECIFIED = "file_format_specified";
         const string FILE_FORMAT = "file_format";
 
         static void Main(string[] args)
@@ -16,8 +17,18 @@ namespace UniqueFilesExtractor
             ConsoleSetUTF8();
 
             Config config = new Config();
-            List<FileInfo> files = GetFiles(fromFolder: config.FindConfigValue(INPUT_FOLDER), 
-                                            fileFormat: config.FindConfigValue(FILE_FORMAT));
+
+            List<FileInfo> files = new List<FileInfo>();
+            if (config.FindConfigValue(FILE_FORMAT_SPECIFIED) == "yes")
+            {
+                files = GetFiles(fromFolder: config.FindConfigValue(INPUT_FOLDER),
+                                 fileFormat: config.FindConfigValue(FILE_FORMAT));
+            }
+            else
+            {
+                files = GetFiles(fromFolder: config.FindConfigValue(INPUT_FOLDER));
+            }
+
             ExtractUniqueFiles(files, outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
 
             Console.ReadKey();
@@ -36,14 +47,18 @@ namespace UniqueFilesExtractor
                 return new List<FileInfo>();
             }
 
-            string[] fileNames = Directory.GetFiles(fromFolder, "*." + fileFormat + "*", SearchOption.AllDirectories);
+            string[] fileNames = Directory.GetFiles(fromFolder, "*." + fileFormat, SearchOption.AllDirectories);
             List<FileInfo> files = new List<FileInfo>(fileNames.Length);
             foreach (string fileName in fileNames)
             {
                 files.Add(new FileInfo(fileName));
             }
             return files;
+        }
 
+        static List<FileInfo> GetFiles(string fromFolder)
+        {
+            return GetFiles(fromFolder, "*");
         }
 
         static void ExtractUniqueFiles(List<FileInfo> files, string outputFolder)

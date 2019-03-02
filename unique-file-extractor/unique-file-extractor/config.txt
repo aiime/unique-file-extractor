@@ -1,3 +1,4 @@
 input_folder = "C:\Input Folder"
 output_folder = "C:\Unique Files"
+file_format_specified = yes
 file_format = mp3
