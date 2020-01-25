@@ -5,17 +5,13 @@ namespace UniqueFilesExtractor
 {
     class Config
     {
-        //public string InputFolder { get { return FindConfigValue(INPUT_FOLDER); } }
-        //public string OutputFolder { get { return FindConfigValue(OUTPUT_FOLDER); } }
-        //public string FileFormat { get { return FindConfigValue(FILE_FORMAT); } }
-
         const int EQUAL_SIGN_LENGTH = 1;
 
         Dictionary<string, string> configDictionary;
 
         public Config()
         {
-            string rawConfig = unique_file_extractor.Properties.Resources.config;
+            string rawConfig = System.IO.File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + @"\config.txt");
             configDictionary = RawConfigToDictionary(rawConfig);
         }
 

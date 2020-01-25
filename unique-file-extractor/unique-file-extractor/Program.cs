@@ -8,6 +8,7 @@ namespace UniqueFilesExtractor
 {
     class Program
     {
+        // Имена полей в конфиге.
         const string INPUT_FOLDER = "input_folder";
         const string OUTPUT_FOLDER = "output_folder";
         const string COMPARISON_TYPE = "comparison_type";
@@ -16,10 +17,13 @@ namespace UniqueFilesExtractor
 
         static void Main(string[] args)
         {
+            // Для корректного отображения не латинских символов в консоле.
             ConsoleSetUTF8();
 
+            // 1: Читаем конфиг.
             Config config = new Config();
 
+            // 2: Извлекаем список файлов из исходной папки (её путь указан в конфиге).
             List<FileInfo> files = new List<FileInfo>();
             if (config.FindConfigValue(FILE_FORMAT_SPECIFIED) == "yes")
             {
@@ -31,15 +35,21 @@ namespace UniqueFilesExtractor
                 files = GetFiles(fromFolder: config.FindConfigValue(INPUT_FOLDER));
             }
 
+            // 3: Извлекаем уникальные файлы в выходную папку (её путь указан в конфиге).
             if (config.FindConfigValue(COMPARISON_TYPE) == "bytes")
             {
-                ExtractUniqueFiles(files, outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
+                ExtractUniqueFiles_ByteComparison(files, outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
+            }
+            else if (config.FindConfigValue(COMPARISON_TYPE) == "hashes")
+            {
+                ExtractUniqueFiles_HashComparison(CalculateHashCodes(files), outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
             }
             else
             {  
-                ExtractUniqueFiles(CalculateHashCodes(files), outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
+                ExtractUniqueFiles_HashComparison(CalculateHashCodes(files), outputFolder: config.FindConfigValue(OUTPUT_FOLDER));
             }
 
+            // Конец.
             Console.WriteLine("Completed");
             Console.ReadKey();
         }
@@ -93,7 +103,7 @@ namespace UniqueFilesExtractor
             return fileByHash;
         }
 
-        static void ExtractUniqueFiles(List<FileInfo> files, string outputFolder)
+        static void ExtractUniqueFiles_ByteComparison(List<FileInfo> files, string outputFolder)
         {
             if (files.Capacity == 0)
             {
@@ -155,28 +165,22 @@ namespace UniqueFilesExtractor
                     NEXT_FILE_TO_COMPARE:;
                 }
 
+                // Проверка на случай, если в выходной папке окажется файл с таким же именем. Это может произойти, если внутри исходной
+                // папки была ещё одна папка, а внутри неё файл с таким же именем, что и файл снаружи, но другим содержанием.
+                // В таком случае к имени файла добавится число с номером (индексом) копии в скобочках.
                 if (File.Exists(outputFolder + @"\" + file.Name))
                 {
-                    int copyIndex = 1;
-                    string newPathWithCopyIndex = 
-                        String.Format(@"{0}\{1}({2}){3}", outputFolder, Path.GetFileNameWithoutExtension(file.FullName), copyIndex, file.Extension);
-                    while (File.Exists(newPathWithCopyIndex) == true)
-                    {
-                        copyIndex++;
-                        newPathWithCopyIndex = 
-                            String.Format(@"{0}\{1}({2}){3}", outputFolder, Path.GetFileNameWithoutExtension(file.FullName), copyIndex, file.Extension);
-                    }
-                    File.Copy(file.FullName, newPathWithCopyIndex);
+                    CopyFileWithCopyIndex(outputFolder, file);
                 }
                 else
                 {
-                    File.Copy(file.FullName, outputFolder + @"\" + file.Name);
+                    CopyFile(outputFolder, file);
                 }            
                 filesChecked.Add(file);
             }
         }
 
-        static void ExtractUniqueFiles(Dictionary<byte[], FileInfo> fileByHash, string outputFolder)
+        static void ExtractUniqueFiles_HashComparison(Dictionary<byte[], FileInfo> fileByHash, string outputFolder)
         {
             if (fileByHash.Count == 0)
             {
@@ -227,32 +231,45 @@ namespace UniqueFilesExtractor
                     }
                 }
 
+                // Проверка на случай, если в выходной папке окажется файл с таким же именем. Это может произойти, если внутри исходной
+                // папки была ещё одна папка, а внутри неё файл с таким же именем, что и файл снаружи, но другим содержанием.
+                // В таком случае к имени файла добавится число с номером (индексом) копии в скобочках.
                 if (File.Exists(outputFolder + @"\" + fileByHashEntry.Value.Name))
                 {
-                    int copyIndex = 1;
-                    string newPathWithCopyIndex = String.Format(@"{0}\{1}({2}){3}", 
-                                                                outputFolder, 
-                                                                Path.GetFileNameWithoutExtension(fileByHashEntry.Value.FullName), 
-                                                                copyIndex,
-                                                                fileByHashEntry.Value.Extension);
-
-                    while (File.Exists(newPathWithCopyIndex) == true)
-                    {
-                        copyIndex++;
-                        newPathWithCopyIndex = String.Format(@"{0}\{1}({2}){3}", 
-                                                             outputFolder, 
-                                                             Path.GetFileNameWithoutExtension(fileByHashEntry.Value.FullName), 
-                                                             copyIndex,
-                                                             fileByHashEntry.Value.Extension);
-                    }
-                    File.Copy(fileByHashEntry.Value.FullName, newPathWithCopyIndex);
+                    CopyFileWithCopyIndex(outputFolder, fileByHashEntry.Value);
                 }
                 else
                 {
-                    File.Copy(fileByHashEntry.Value.FullName, outputFolder + @"\" + fileByHashEntry.Value.Name);
+                    CopyFile(outputFolder, fileByHashEntry.Value);
                 }
                 checkedHashes.Add(fileByHashEntry.Key);
             }
+        }
+
+        static void CopyFileWithCopyIndex(string outputFolder, FileInfo file)
+        {
+            int copyIndex = 1;
+            string newPathWithCopyIndex = String.Format(@"{0}\{1}({2}){3}",
+                                                        outputFolder,
+                                                        Path.GetFileNameWithoutExtension(file.FullName),
+                                                        copyIndex,
+                                                        file.Extension);
+
+            while (File.Exists(newPathWithCopyIndex) == true)
+            {
+                copyIndex++;
+                newPathWithCopyIndex = String.Format(@"{0}\{1}({2}){3}",
+                                                     outputFolder,
+                                                     Path.GetFileNameWithoutExtension(file.FullName),
+                                                     copyIndex,
+                                                     file.Extension);
+            }
+            File.Copy(file.FullName, newPathWithCopyIndex);
+        }
+
+        static void CopyFile(string outputFolder, FileInfo file)
+        {
+            File.Copy(file.FullName, outputFolder + @"\" + file.Name);
         }
     }
 }

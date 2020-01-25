@@ -1,4 +1,0 @@
-﻿input_folder = "C:\Input Folder"
-output_folder = "C:\Unique Files"
-comparison_type = bytes
-file_format_specified = no
